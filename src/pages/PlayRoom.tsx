@@ -165,13 +165,59 @@ export default function PlayRoom() {
       // Verificar se todos os jogadores já responderam
       const { data: allPlayersInRoom } = await localStore.players.select(`eq("room_id", "${room.id}")`);
       if (allPlayersInRoom && updatedResponded.length === allPlayersInRoom.length) {
-        // Todos responderam, finalizar desafio automaticamente após 2 segundos
-        setTimeout(async () => {
-          await localStore.rooms.update(`eq("id", "${room.id}")`, {
-            challenge_ended: true
-          });
-          toast.success("Todos responderam! Desafio finalizado automaticamente ⏰");
-        }, 2000);
+        // Todos responderam, mostrar contagem regressiva e finalizar automaticamente
+        toast.info("Todos responderam! Finalizando em 3 segundos... ⏰");
+        
+        let countdown = 3;
+        const countdownInterval = setInterval(async () => {
+          countdown--;
+          
+          if (countdown > 0) {
+            toast.info(`Finalizando em ${countdown}...`);
+          } else {
+            clearInterval(countdownInterval);
+            
+            // Finalizar desafio e contabilizar pontos de todos
+            await localStore.rooms.update(`eq("id", "${room.id}")`, {
+              challenge_ended: true
+            });
+            
+            // Forçar contabilização de pontos para todos os jogadores
+            for (const player of allPlayersInRoom) {
+              const markedAnswer = player.marked[0];
+              if (markedAnswer) {
+                const [r, c] = markedAnswer.split(',').map(Number);
+                const markedValue = player.card[r][c];
+                const isCorrect = room.current_challenge?.answer === markedValue;
+                
+                if (isCorrect) {
+                  // Verificar se já recebeu bônus
+                  const alreadyGotBonus = room.first_correct_player === player.id;
+                  let pointsEarned = 5;
+                  
+                  if (alreadyGotBonus) {
+                    pointsEarned += 2;
+                  }
+                  
+                  const newPoints = player.points + pointsEarned;
+                  await localStore.players.update(`eq("id", "${player.id}")`, { points: newPoints });
+                }
+              }
+            }
+            
+            toast.success("Todos responderam! Desafio finalizado automaticamente ⏰");
+            
+            // Iniciar próximo desafio automaticamente após 3 segundos
+            setTimeout(async () => {
+              await localStore.rooms.update(`eq("id", "${room.id}")`, {
+                challenge_ended: false,
+                first_correct_player: null,
+                players_responded: []
+              });
+              toast.success("Próximo desafio iniciado automaticamente! 🎯");
+            }, 3000);
+          }
+        }, 1000);
       }
     }
     
@@ -237,14 +283,16 @@ export default function PlayRoom() {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      <header className="bg-gradient-primary text-primary-foreground px-6 py-5 sticky top-0 z-10 shadow-soft">
+      <header className="bg-gradient-primary text-primary-foreground px-6 py-4 sticky top-0 z-10 shadow-soft">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            <div>
-              <p className="font-bold">{player.nickname}</p>
-              <p className="text-xs opacity-80">{room.name}</p>
-              <p className="text-xs text-primary font-bold">🏆 {player.points} pts</p>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg border border-white/50">
+              <p className="font-bold text-base text-foreground">{player.nickname}</p>
+              <p className="text-sm text-muted-foreground">{room.name}</p>
+              <p className="text-sm font-bold text-primary flex items-center gap-1">
+                <Trophy className="w-4 h-4" /> {player.points} pts
+              </p>
             </div>
           </div>
           {player.has_won && <span className="bg-secondary text-secondary-foreground font-bold px-3 py-1 rounded-full text-sm flex items-center gap-1"><Trophy className="w-4 h-4" />Bingo!</span>}
@@ -320,7 +368,7 @@ export default function PlayRoom() {
                       ? "bg-primary text-primary-foreground border-primary shadow-lg scale-95"
                       : isDisabled
                       ? "bg-muted text-muted-foreground border-border opacity-50 cursor-not-allowed"
-                      : "bg-card border-border hover:border-primary/50 cursor-pointer"
+                      : "bg-blue-50 border-blue-200 hover:border-blue-400 hover:bg-blue-100 cursor-pointer"
                   }`}
                 >
                   {value}
