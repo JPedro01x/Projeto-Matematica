@@ -15,6 +15,8 @@ interface Room {
   current_challenge: Challenge | null; drawn_answers: string[]; winner_id: string | null;
   difficulty: "facil" | "medio" | "dificil";
   challenge_ended?: boolean;
+  first_correct_player?: string | null; // ID do primeiro jogador a acertar o desafio atual
+  players_responded?: string[]; // IDs dos jogadores que já responderam ao desafio atual
 }
 interface Player { id: string; nickname: string; card: string[][]; marked: string[]; has_won: boolean; points: number; }
 
@@ -36,7 +38,20 @@ export default function PlayRoom() {
       try {
         const { data: r } = await localStore.rooms.select(`eq("id", "${roomId}")`);
         const { data: p } = await localStore.players.select(`eq("id", "${playerId}")`);
-        if (r && r.length) setRoom(r[0] as any);
+        if (r && r.length) {
+          const roomData = r[0] as any;
+          setRoom(roomData);
+          
+          // Redirecionar para resultados se a partida foi encerrada
+          if (roomData.status === 'finished') {
+            toast.success("Partida encerrada! Redirecionando para resultados... 🏆");
+            setTimeout(() => {
+              navigate(`/resultados/${roomId}`);
+            }, 2000);
+            return;
+          }
+        }
+        
         if (p && p.length) {
           setPlayer(p[0] as any);
         } else {
@@ -98,6 +113,22 @@ export default function PlayRoom() {
     }
   }, [room?.current_challenge?.question, lastChallengeId, player]);
 
+  // Reset quando challenge_ended muda de true para false (novo desafio começando)
+  useEffect(() => {
+    if (room?.challenge_ended === false && timerEnded === true) {
+      // Professor iniciou novo desafio, resetar timer
+      setTimerEnded(false);
+      setMarkedCells(new Set());
+      setSelectedAnswer(null);
+      
+      // Limpar marcações do jogador
+      if (player) {
+        localStore.players.update(`eq("id", "${player.id}")`, { marked: [] });
+        setPlayer({ ...player, marked: [] });
+      }
+    }
+  }, [room?.challenge_ended, timerEnded, player]);
+
   const toggleMark = async (r: number, c: number) => {
     if (!player || !room) return;
     if (room.status !== "playing") return;
@@ -109,6 +140,39 @@ export default function PlayRoom() {
     // Se já marcou algo, não permitir mudar
     if (player.marked.length > 0) {
       return;
+    }
+    
+    // Verificar se a resposta marcada está correta e se é o primeiro a marcar
+    const isCorrect = room.current_challenge?.answer === value;
+    const isFirstToMarkCorrect = isCorrect && !room.first_correct_player;
+    
+    // Se marcou a resposta correta e for o primeiro, dar bônus imediatamente
+    if (isFirstToMarkCorrect) {
+      await localStore.rooms.update(`eq("id", "${room.id}")`, {
+        first_correct_player: player.id
+      });
+      toast.success("Primeiro a marcar a resposta correta! +2 bônus 🏆⚡");
+    }
+    
+    // Registrar que este jogador respondeu ao desafio atual
+    const currentResponded = room.players_responded || [];
+    if (!currentResponded.includes(player.id)) {
+      const updatedResponded = [...currentResponded, player.id];
+      await localStore.rooms.update(`eq("id", "${room.id}")`, {
+        players_responded: updatedResponded
+      });
+      
+      // Verificar se todos os jogadores já responderam
+      const { data: allPlayersInRoom } = await localStore.players.select(`eq("room_id", "${room.id}")`);
+      if (allPlayersInRoom && updatedResponded.length === allPlayersInRoom.length) {
+        // Todos responderam, finalizar desafio automaticamente após 2 segundos
+        setTimeout(async () => {
+          await localStore.rooms.update(`eq("id", "${room.id}")`, {
+            challenge_ended: true
+          });
+          toast.success("Todos responderam! Desafio finalizado automaticamente ⏰");
+        }, 2000);
+      }
     }
     
     // Marcar resposta (sem revelar se está certo ou errado ainda)
@@ -143,10 +207,21 @@ export default function PlayRoom() {
     const isCorrect = room.current_challenge.answer === markedValue;
     
     if (isCorrect) {
-      const newPoints = currentPlayer.points + 5;
+      // Verificar se já recebeu bônus por ser o primeiro a marcar
+      const alreadyGotBonus = room.first_correct_player === player.id;
+      
+      let pointsEarned = 5; // Pontos base por acerto
+      let message = "Acertou! +5 pontos �";
+      
+      if (alreadyGotBonus) {
+        pointsEarned += 2; // Adicionar bônus que já foi dado na marcação
+        message = "Acertou! +7 pontos (incluindo bônus) 🎯🏆";
+      }
+      
+      const newPoints = currentPlayer.points + pointsEarned;
       await localStore.players.update(`eq("id", "${player.id}")`, { points: newPoints });
       setPlayer({ ...currentPlayer, points: newPoints });
-      toast.success("Acertou! +5 pontos 🎯");
+      toast.success(message);
 
       const won = checkWin(currentPlayer.card, currentPlayer.marked, room.win_condition);
       if (won && !currentPlayer.has_won) {
@@ -229,7 +304,7 @@ export default function PlayRoom() {
               const isCorrectAndMarked = showResults && isMarked && isCorrect;
               const isWrongAndMarked = showResults && isMarked && !isCorrect;
               const revealCorrect = showResults && isCorrect;
-              const isDisabled = showResults || player.marked.length > 0;
+              const isDisabled = showResults || (player.marked.length > 0 && !room.challenge_ended);
               
               return (
                 <button

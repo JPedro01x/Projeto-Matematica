@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { validateNicknameContent } from "@/lib/contentFilter";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -49,9 +50,12 @@ export default function Auth() {
   return (
     <div className="min-h-screen bg-hero flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/90 hover:text-primary-foreground mb-6">
-          <ArrowLeft className="w-4 h-4" /> Voltar
-        </Link>
+        <div className="flex items-center justify-between mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/90 hover:text-primary-foreground">
+            <ArrowLeft className="w-4 h-4" /> Voltar
+          </Link>
+          <ThemeToggle />
+        </div>
         <Card className="p-8 rounded-3xl shadow-glow border-0">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-11 h-11 rounded-2xl bg-gradient-primary flex items-center justify-center">

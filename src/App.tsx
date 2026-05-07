@@ -11,6 +11,7 @@ import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import HostRoom from "./pages/HostRoom.tsx";
 import JoinRoom from "./pages/JoinRoom.tsx";
 import PlayRoom from "./pages/PlayRoom.tsx";
+import GameResults from "./pages/GameResults.tsx";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/entrar" element={<JoinRoom />} />
             <Route path="/entrar/:roomId" element={<JoinRoom />} />
             <Route path="/jogar/:roomId/:playerId" element={<PlayRoom />} />
+            <Route path="/resultados/:roomId" element={<GameResults />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

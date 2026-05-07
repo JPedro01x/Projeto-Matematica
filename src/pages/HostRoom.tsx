@@ -15,6 +15,8 @@ interface Room {
   current_challenge: Challenge | null; drawn_answers: string[]; winner_id: string | null;
   challenge_ended?: boolean;
   game_challenges?: Challenge[]; // Todos os desafios do jogo pré-gerados
+  first_correct_player?: string | null; // ID do primeiro jogador a acertar o desafio atual
+  players_responded?: string[]; // IDs dos jogadores que já responderam ao desafio atual
 }
 interface Player { id: string; nickname: string; has_won: boolean; points: number; }
 
@@ -119,7 +121,9 @@ export default function HostRoom() {
       status: "playing",
       game_challenges: gameChallenges as any,
       current_challenge: firstChallenge as any,
-      drawn_answers: [firstChallenge.answer]
+      drawn_answers: [firstChallenge.answer],
+      first_correct_player: null, // Resetar primeiro acertador
+      players_responded: [] // Resetar jogadores que responderam
     });
     
     // Atualizar cartelas dos jogadores com TODAS as respostas dos desafios
@@ -170,7 +174,9 @@ export default function HostRoom() {
     await localStore.rooms.update(`eq("id", "${room.id}")`, {
       current_challenge: nextChallenge as any,
       drawn_answers: [...room.drawn_answers, nextChallenge.answer],
-      challenge_ended: false
+      challenge_ended: false,
+      first_correct_player: null, // Resetar primeiro acertador para o novo desafio
+      players_responded: [] // Resetar jogadores que responderam
     });
     
     toast.success(`Próximo desafio: ${nextChallenge.question}`);
@@ -246,6 +252,22 @@ export default function HostRoom() {
                 </Button>
               </div>
               <p className="mt-6 text-xs opacity-70">{room.drawn_answers.length} desafio(s) sorteado(s)</p>
+              
+              {/* Mostrar status de respostas */}
+              {room.status === "playing" && room.current_challenge && (
+                <div className="mt-6 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+                  <p className="text-sm uppercase tracking-wider opacity-80 mb-2">Status das Respostas</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-lg font-bold">
+                      {room.players_responded?.length || 0} / {players.length}
+                    </span>
+                    <span className="text-sm opacity-80">jogadores responderam</span>
+                  </div>
+                  {room.players_responded && room.players_responded.length === players.length && (
+                    <p className="text-sm text-green-300 mt-2 text-center">✅ Todos responderam! Desafio será finalizado automaticamente...</p>
+                  )}
+                </div>
+              )}
               
               {/* Mostrar vencedor atual quando desafio termina */}
               {room.challenge_ended && players.length > 0 && (

@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { generateCard } from "@/lib/bingo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function JoinRoom() {
   const navigate = useNavigate();
@@ -118,14 +119,17 @@ export default function JoinRoom() {
   return (
     <div className="min-h-screen bg-hero flex items-center justify-center p-6">
       <div className="w-full max-w-md">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate("/")} 
-          className="mb-4 rounded-full"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar
-        </Button>
+        <div className="flex items-center justify-between mb-4">
+          <Button 
+            variant="ghost" 
+            onClick={() => navigate("/")} 
+            className="rounded-full"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+          <ThemeToggle />
+        </div>
         <div className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/90 backdrop-blur shadow-soft">
             <Sparkles className="w-4 h-4 text-primary" />
