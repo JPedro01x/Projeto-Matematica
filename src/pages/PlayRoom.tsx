@@ -13,7 +13,8 @@ interface Room {
   id: string; name: string; status: string; rows: number; cols: number;
   win_condition: "line" | "column" | "diagonal" | "full";
   current_challenge: Challenge | null; drawn_answers: string[]; winner_id: string | null;
-  difficulty: "facil" | "medio" | "dificil"; // Adicionar campo difficulty
+  difficulty: "facil" | "medio" | "dificil";
+  challenge_ended?: boolean;
 }
 interface Player { id: string; nickname: string; card: string[][]; marked: string[]; has_won: boolean; points: number; }
 
@@ -22,6 +23,7 @@ export default function PlayRoom() {
   const navigate = useNavigate();
   const [room, setRoom] = useState<Room | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timerEnded, setTimerEnded] = useState(false);
@@ -223,10 +225,11 @@ export default function PlayRoom() {
               const isMarked = player.marked.includes(key);
               const isSelected = selectedAnswer === key;
               const isCorrect = room.current_challenge?.answer === value;
-              const isCorrectAndMarked = timerEnded && isMarked && isCorrect;
-              const isWrongAndMarked = timerEnded && isMarked && !isCorrect;
-              const revealCorrect = timerEnded && isCorrect;
-              const isDisabled = timerEnded || player.marked.length > 0;
+              const showResults = timerEnded || room.challenge_ended;
+              const isCorrectAndMarked = showResults && isMarked && isCorrect;
+              const isWrongAndMarked = showResults && isMarked && !isCorrect;
+              const revealCorrect = showResults && isCorrect;
+              const isDisabled = showResults || player.marked.length > 0;
               
               return (
                 <button

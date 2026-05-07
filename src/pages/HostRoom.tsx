@@ -13,6 +13,7 @@ interface Room {
   id: string; name: string; pin: string; status: string; rows: number; cols: number;
   win_condition: string; topics: string[]; difficulty: string;
   current_challenge: Challenge | null; drawn_answers: string[]; winner_id: string | null;
+  challenge_ended?: boolean;
 }
 interface Player { id: string; nickname: string; has_won: boolean; points: number; }
 
@@ -136,6 +137,16 @@ export default function HostRoom() {
   };
 
   const draw = async () => {
+    // Se o desafio atual ainda não foi finalizado, finaliza ele primeiro
+    if (!room.challenge_ended && room.current_challenge) {
+      await localStore.rooms.update(`eq("id", "${room.id}")`, {
+        challenge_ended: true
+      });
+      toast.success("Desafio finalizado! Mostrando respostas... ⏱️");
+      return;
+    }
+    
+    // Se o desafio já foi finalizado, vai para o próximo
     const ch = generateChallenge(room.topics as Topic[], room.difficulty as Difficulty);
     // ensure new answer not already drawn
     let tries = 0;
@@ -147,6 +158,7 @@ export default function HostRoom() {
     await localStore.rooms.update(`eq("id", "${room.id}")`, {
       current_challenge: next as any,
       drawn_answers: [...room.drawn_answers, next.answer],
+      challenge_ended: false
     });
   };
 
@@ -213,13 +225,28 @@ export default function HostRoom() {
               <p className="opacity-80 mb-6 text-sm">Resposta: <span className="font-mono font-bold">{room.current_challenge.answer}</span></p>
               <div className="flex gap-3 flex-wrap justify-center">
                 <Button onClick={draw} size="lg" className="rounded-2xl h-12 bg-card text-foreground hover:bg-card/90 border-0" disabled={room.status !== 'playing'}>
-                  <SkipForward className="w-4 h-4 mr-2" /> Próximo desafio
+                  <SkipForward className="w-4 h-4 mr-2" /> {room.challenge_ended ? 'Próximo desafio' : 'Finalizar desafio'}
                 </Button>
                 <Button onClick={room.status === 'playing' ? finish : start} variant="ghost" size="lg" className="rounded-2xl h-12 hover:bg-white/10">
-                  {room.status === 'playing' ? 'Encerrar' : 'Começar partida'}
+                  {room.status === 'playing' ? 'Encerrar partida' : 'Começar partida'}
                 </Button>
               </div>
               <p className="mt-6 text-xs opacity-70">{room.drawn_answers.length} desafio(s) sorteado(s)</p>
+              
+              {/* Mostrar vencedor atual quando desafio termina */}
+              {room.challenge_ended && players.length > 0 && (
+                <div className="mt-6 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+                  <p className="text-sm uppercase tracking-wider opacity-80 mb-1">Líder Atual</p>
+                  {(() => {
+                    const leader = players.reduce((prev, current) => (prev.points > current.points) ? prev : current);
+                    return (
+                      <p className="text-2xl font-bold flex items-center justify-center gap-2">
+                        🏆 {leader.nickname} <span className="text-lg opacity-80">({leader.points} pts)</span>
+                      </p>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           )}
           {room.status === "finished" && (

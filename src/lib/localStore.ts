@@ -15,6 +15,7 @@ interface Room {
   drawn_answers: string[];
   winner_id: string | null;
   created_at: string;
+  challenge_ended?: boolean;
 }
 
 interface Player {
