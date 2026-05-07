@@ -41,9 +41,37 @@ export default function JoinRoom() {
     
     setBusy(true);
     try {
+      console.log('=== INICIANDO BUSCA DE SALA ===');
+      console.log('PIN digitado:', pin.trim());
+      console.log('Nickname:', nickname.trim());
+      
       const { data: room } = await localStore.rooms.select(`eq("pin", "${pin.trim()}")`);
-      if (!room || !room.length) { toast.error("PIN inválido"); return; }
+      console.log('Resultado da busca:', room);
+      console.log('Query executada:', `eq("pin", "${pin.trim()}")`);
+      
+      if (!room || !room.length) { 
+        console.error('Sala não encontrada. PIN:', pin.trim(), 'Query:', `eq("pin", "${pin.trim()}")`, 'Rooms disponíveis:', room);
+        toast.error("PIN inválido"); 
+        return; 
+      }
       const roomData = room[0];
+      console.log('Sala encontrada com sucesso:', roomData);
+      
+      // Verificar se a partida já está em andamento
+      if (roomData.status === 'playing') {
+        toast.error('Esta partida já iniciou! Aguarde a próxima rodada. ⏳', {
+          duration: 5000,
+        });
+        return;
+      }
+      
+      // Verificar se a partida já foi finalizada
+      if (roomData.status === 'finished') {
+        toast.error('Esta partida já foi encerrada. Aguarde uma nova sala! 🏁', {
+          duration: 5000,
+        });
+        return;
+      }
       
       // Verificar se já existe jogador com mesmo apelido nesta sala
       const { data: existingPlayers } = await localStore.players.select(`eq("room_id", "${roomData.id}")`);
@@ -52,6 +80,10 @@ export default function JoinRoom() {
         toast.error("Este apelido já está em uso na sala 😅");
         return;
       }
+      
+      console.log('Sala encontrada:', roomData);
+      console.log('PIN digitado:', pin.trim());
+      console.log('Players existentes:', existingPlayers?.length || 0);
       
       const card = generateCard(roomData.rows, roomData.cols, roomData.topics as any, roomData.difficulty as any);
       const { data: player } = await localStore.players.insert({

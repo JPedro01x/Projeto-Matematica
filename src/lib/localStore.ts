@@ -40,17 +40,34 @@ const genId = () => crypto.randomUUID();
 const listeners = new Map<string, Set<() => void>>();
 
 const emitChange = (table: string) => {
+  console.log(`Emitindo evento para tabela: ${table}`);
   const tableListeners = listeners.get(table);
   if (tableListeners) {
+    console.log(`Executando ${tableListeners.size} listeners para ${table}`);
     tableListeners.forEach(callback => callback());
   }
   
-  // Também dispara um evento customizado para sincronização entre abas
+  // Dispara um evento customizado para sincronização na mesma aba
   window.dispatchEvent(new CustomEvent('dataChanged', { detail: { table } }));
   
-  // Dispara evento específico para atualizações em tempo real
-  window.dispatchEvent(new CustomEvent('playerJoined', { detail: { table } }));
-  window.dispatchEvent(new CustomEvent('playerLeft', { detail: { table } }));
+  // Dispara eventos específicos para jogadores na mesma aba
+  if (table === 'players') {
+    window.dispatchEvent(new CustomEvent('playerJoined', { detail: { table } }));
+    console.log('Evento playerJoined disparado na mesma aba');
+  }
+  
+  // Força a sincronização entre abas usando um mecanismo de timestamp
+  // Isso garante que o evento 'storage' seja acionado em outras abas
+  if (table === 'players' || table === 'rooms') {
+    const syncKey = `bingo_sync_${table}`;
+    const timestamp = Date.now().toString();
+    try {
+      localStorage.setItem(syncKey, timestamp);
+      console.log(`Sincronização forçada entre abas: ${table} em ${timestamp}`);
+    } catch (err) {
+      console.warn(`Erro ao sincronizar ${table}:`, err);
+    }
+  }
 };
 
 // Persistir dados no localStorage
@@ -80,17 +97,40 @@ try {
   console.warn('Failed to load data from localStorage:', err);
 }
 
+// Função auxiliar para sincronizar com localStorage
+const syncFromLocalStorage = () => {
+  try {
+    const savedRooms = localStorage.getItem('bingo_rooms');
+    if (savedRooms) {
+      rooms = JSON.parse(savedRooms);
+    }
+    const savedPlayers = localStorage.getItem('bingo_players');
+    if (savedPlayers) {
+      players = JSON.parse(savedPlayers);
+    }
+  } catch (err) {
+    console.warn('Erro ao sincronizar com localStorage:', err);
+  }
+};
+
 // API local que simula o Supabase
 export const localStore = {
   // Rooms
   rooms: {
     select: async (query?: string) => {
+      // Sincronizar com localStorage antes de buscar
+      syncFromLocalStorage();
+      
       if (query?.includes('eq')) {
         // Simular consulta específica (ex: .eq("id", roomId))
         const matches = query.match(/eq\("([^"]+)",\s*"([^"]+)"\)/);
         if (matches) {
           const [, field, value] = matches;
-          return { data: rooms.filter(r => (r as any)[field] === value) };
+          console.log(`Buscando salas: field=${field}, value=${value}`);
+          console.log('Salas disponíveis:', rooms.map(r => ({ id: r.id, pin: r.pin, name: r.name })));
+          const result = rooms.filter(r => (r as any)[field] === value);
+          console.log('Resultado da busca:', result);
+          return { data: result };
         }
       }
       return { data: [...rooms] };
@@ -152,6 +192,9 @@ export const localStore = {
   // Players
   players: {
     select: async (query?: string) => {
+      // Sincronizar com localStorage antes de buscar
+      syncFromLocalStorage();
+      
       if (query?.includes('eq')) {
         // Simular consulta específica (ex: .eq("id", playerId))
         const matches = query.match(/eq\("([^"]+)",\s*"([^"]+)"\)/);

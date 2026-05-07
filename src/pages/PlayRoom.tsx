@@ -6,11 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Trophy, Sparkles, Loader } from "lucide-react";
 import { toast } from "sonner";
 import { Challenge, checkWin } from "@/lib/bingo";
+import { Timer } from "@/components/timer";
+import { TIMER_CONFIG } from "@/hooks/use-timer";
 
 interface Room {
   id: string; name: string; status: string; rows: number; cols: number;
   win_condition: "line" | "column" | "diagonal" | "full";
   current_challenge: Challenge | null; drawn_answers: string[]; winner_id: string | null;
+  difficulty: "facil" | "medio" | "dificil"; // Adicionar campo difficulty
 }
 interface Player { id: string; nickname: string; card: string[][]; marked: string[]; has_won: boolean; points: number; }
 
@@ -19,8 +22,10 @@ export default function PlayRoom() {
   const navigate = useNavigate();
   const [room, setRoom] = useState<Room | null>(null);
   const [player, setPlayer] = useState<Player | null>(null);
-  const [markedCells, setMarkedCells] = useState<Set<string>>(new Set()); // Para controle visual
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null); // Resposta selecionada atualmente
+  const [markedCells, setMarkedCells] = useState<Set<string>>(new Set());
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [timerEnded, setTimerEnded] = useState(false);
+  const [lastChallengeId, setLastChallengeId] = useState<string>("");
 
   useEffect(() => {
     if (!roomId || !playerId) return;
@@ -72,68 +77,82 @@ export default function PlayRoom() {
     };
   }, [roomId, playerId, navigate]);
 
+  // Reset quando desafio mudar
+  useEffect(() => {
+    if (room?.current_challenge?.question) {
+      const challengeId = room.current_challenge.question;
+      if (challengeId !== lastChallengeId) {
+        setLastChallengeId(challengeId);
+        setMarkedCells(new Set());
+        setSelectedAnswer(null);
+        setTimerEnded(false);
+
+        // Limpar resposta do jogador para o novo desafio
+        if (player) {
+          localStore.players.update(`eq("id", "${player.id}")`, { marked: [] });
+          setPlayer({ ...player, marked: [] });
+        }
+      }
+    }
+  }, [room?.current_challenge?.question, lastChallengeId, player]);
+
   const toggleMark = async (r: number, c: number) => {
     if (!player || !room) return;
     if (room.status !== "playing") return;
+    if (timerEnded) return; // Não permitir marcar após timer acabar
+    
     const value = player.card[r][c];
     const key = `${r},${c}`;
     
-    // Se já houver uma resposta selecionada e for diferente, desmarcar primeiro
-    if (selectedAnswer && selectedAnswer !== key) {
-      // Desmarcar a resposta anterior
-      const oldKey = selectedAnswer;
-      const [oldR, oldC] = oldKey.split(',').map(Number);
-      const newMarked = player.marked.filter(x => x !== oldKey);
-      await localStore.players.update(`eq("id", "${player.id}")`, { marked: newMarked });
-      setMarkedCells(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(oldKey);
-        return newSet;
-      });
-    }
-    
-    // Verificar se esta célula já está marcada
-    const isAlreadyMarked = player.marked.includes(key);
-    
-    if (isAlreadyMarked) {
-      // Desmarcar se clicar novamente
-      const newMarked = player.marked.filter(x => x !== key);
-      await localStore.players.update(`eq("id", "${player.id}")`, { marked: newMarked });
-      setMarkedCells(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(key);
-        return newSet;
-      });
-      setSelectedAnswer(null);
+    // Se já marcou algo, não permitir mudar
+    if (player.marked.length > 0) {
       return;
     }
     
-    // Marcar nova resposta
-    const newMarked = [...player.marked, key];
-    const isCorrect = room.current_challenge?.answer === value;
-    
-    // Calcular pontos
-    let pointsChange = 0;
-    if (isCorrect) {
-      pointsChange = 5;
-      toast.success("Acertou! +5 pontos 🎯");
-    } else {
-      pointsChange = 0;
-      toast.error("Errou! Sem pontos ❌");
-    }
-    
-    const newPoints = player.points + pointsChange;
+    // Marcar resposta (sem revelar se está certo ou errado ainda)
+    const newMarked = [key];
     
     // Atualizar estado
-    await localStore.players.update(`eq("id", "${player.id}")`, { marked: newMarked, points: newPoints });
+    await localStore.players.update(`eq("id", "${player.id}")`, { marked: newMarked });
     setMarkedCells(prev => new Set(prev).add(key));
     setSelectedAnswer(key);
+  };
+
+  // Callback quando timer acabar
+  const handleTimeUp = async () => {
+    setTimerEnded(true);
     
-    // Verificar vitória
-    const won = checkWin(player.card, newMarked, room.win_condition);
-    if (won && !player.has_won) {
-      await localStore.rooms.update(`eq("id", "${room.id}")`, { winner_id: player.id, status: "finished" });
-      toast.success("BINGO! 🎉");
+    if (!player || !room || !room.current_challenge) return;
+    
+    // Buscar dados atualizados do jogador
+    const { data: p } = await localStore.players.select(`eq("id", "${player.id}")`);
+    if (!p || !p.length) return;
+    
+    const currentPlayer = p[0] as Player;
+    const markedAnswer = currentPlayer.marked[0];
+    
+    if (!markedAnswer) {
+      toast.info("Tempo esgotado! Nenhuma resposta marcada.");
+      return;
+    }
+    
+    const [r, c] = markedAnswer.split(',').map(Number);
+    const markedValue = currentPlayer.card[r][c];
+    const isCorrect = room.current_challenge.answer === markedValue;
+    
+    if (isCorrect) {
+      const newPoints = currentPlayer.points + 5;
+      await localStore.players.update(`eq("id", "${player.id}")`, { points: newPoints });
+      setPlayer({ ...currentPlayer, points: newPoints });
+      toast.success("Acertou! +5 pontos 🎯");
+
+      const won = checkWin(currentPlayer.card, currentPlayer.marked, room.win_condition);
+      if (won && !currentPlayer.has_won) {
+        await localStore.rooms.update(`eq("id", "${room.id}")`, { winner_id: player.id, status: "finished" });
+        toast.success("BINGO! 🎉");
+      }
+    } else {
+      toast.error("Errou! Sem pontos ❌");
     }
   };
 
@@ -179,6 +198,15 @@ export default function PlayRoom() {
             <p className="text-sm text-secondary-foreground/70 mt-2">Resolva e marque na cartela ⬇️</p>
           </Card>
         )}
+        
+        {/* Timer */}
+        {room.status === "playing" && room.current_challenge && (
+          <Timer
+            key={room.current_challenge.question}
+            difficulty={room.difficulty}
+            onTimeUp={handleTimeUp}
+          />
+        )}
         {room.status === "finished" && (
           <Card className="p-6 text-center rounded-3xl shadow-card mb-6 bg-gradient-accent border-0">
             <Trophy className="w-10 h-10 mx-auto mb-2" />
@@ -195,21 +223,26 @@ export default function PlayRoom() {
               const isMarked = player.marked.includes(key);
               const isSelected = selectedAnswer === key;
               const isCorrect = room.current_challenge?.answer === value;
-              const isCorrectAndMarked = isMarked && isCorrect;
-              const isWrongAndMarked = isMarked && !isCorrect;
+              const isCorrectAndMarked = timerEnded && isMarked && isCorrect;
+              const isWrongAndMarked = timerEnded && isMarked && !isCorrect;
+              const revealCorrect = timerEnded && isCorrect;
+              const isDisabled = timerEnded || player.marked.length > 0;
               
               return (
                 <button
                   key={key}
                   onClick={() => toggleMark(r, c)}
+                  disabled={isDisabled}
                   className={`aspect-square rounded-2xl flex items-center justify-center font-bold text-base sm:text-xl transition-all border-2 ${
-                    isCorrectAndMarked
+                    isCorrectAndMarked || revealCorrect
                       ? "bg-green-500 text-white border-green-600 shadow-lg scale-95"
                       : isWrongAndMarked
                       ? "bg-red-500 text-white border-red-600 shadow-lg scale-95"
                       : isSelected
                       ? "bg-primary text-primary-foreground border-primary shadow-lg scale-95"
-                      : "bg-card border-border hover:border-primary/50"
+                      : isDisabled
+                      ? "bg-muted text-muted-foreground border-border opacity-50 cursor-not-allowed"
+                      : "bg-card border-border hover:border-primary/50 cursor-pointer"
                   }`}
                 >
                   {value}

@@ -35,11 +35,14 @@ export default function HostRoom() {
     
     const load = async () => {
       try {
+        console.log('HostRoom: Carregando dados da sala...');
         const { data } = await localStore.rooms.select(`eq("id", "${id}")`);
         if (data && data.length) setRoom(data[0] as any);
         
         const { data: ps } = await localStore.players.select(`eq("room_id", "${id}")`);
-        setPlayers((ps as any) ?? []);
+        const newPlayers = (ps as any) ?? [];
+        console.log(`HostRoom: ${newPlayers.length} jogadores encontrados`);
+        setPlayers(newPlayers);
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
       }
@@ -48,41 +51,47 @@ export default function HostRoom() {
     // Carregar imediatamente
     load();
 
-    // Atualizar a cada 1 segundo
-    const interval = setInterval(load, 1000);
+    // Atualizar a cada 100ms para melhor responsividade (mais rápido que antes)
+    const interval = setInterval(load, 100);
     
-    // Listener para mudanças no localStorage de outras abas
+    // Listener para mudanças no localStorage de outras abas - chamada imediata
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'bingo_players' || e.key === 'bingo_rooms') {
+      console.log(`HostRoom: Storage event detectado - ${e.key}`);
+      if (e.key === 'bingo_players' || e.key === 'bingo_rooms' || e.key === 'bingo_sync_players' || e.key === 'bingo_sync_rooms') {
+        console.log('HostRoom: Recarregando dados imediatamente devido a mudança em:', e.key);
+        // Recarregar imediatamente sem esperar o próximo intervalo
         load();
       }
     };
     
-    // Listener para evento customizado de mudanças de dados
-    const handleDataChanged = (e: Event) => {
+    // Listener para evento customizado de mudanças de dados (mesma aba)
+    const handleDataChanged = (e: CustomEvent) => {
+      console.log('HostRoom: Evento dataChanged recebido:', e.detail);
       load();
     };
     
-    // Listeners específicos para entrada e saída de jogadores
-    const handlePlayerJoined = (e: Event) => {
+    // Listeners específicos para entrada e saída de jogadores (mesma aba)
+    const handlePlayerJoined = (e: CustomEvent) => {
+      console.log('HostRoom: Evento playerJoined recebido:', e.detail);
       load();
     };
     
-    const handlePlayerLeft = (e: Event) => {
+    const handlePlayerLeft = (e: CustomEvent) => {
+      console.log('HostRoom: Evento playerLeft recebido:', e.detail);
       load();
     };
     
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('dataChanged', handleDataChanged);
-    window.addEventListener('playerJoined', handlePlayerJoined);
-    window.addEventListener('playerLeft', handlePlayerLeft);
+    window.addEventListener('dataChanged', handleDataChanged as EventListener);
+    window.addEventListener('playerJoined', handlePlayerJoined as EventListener);
+    window.addEventListener('playerLeft', handlePlayerLeft as EventListener);
     
     return () => {
       clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('dataChanged', handleDataChanged);
-      window.removeEventListener('playerJoined', handlePlayerJoined);
-      window.removeEventListener('playerLeft', handlePlayerLeft);
+      window.removeEventListener('dataChanged', handleDataChanged as EventListener);
+      window.removeEventListener('playerJoined', handlePlayerJoined as EventListener);
+      window.removeEventListener('playerLeft', handlePlayerLeft as EventListener);
     };
   }, [id]);
 
@@ -142,7 +151,13 @@ export default function HostRoom() {
   };
 
   const finish = async () => {
-    await localStore.rooms.update(`eq("id", "${room.id}")`, { status: "finished" });
+    // Finalizar a partida: limpar desafios e definir status como finished
+    await localStore.rooms.update(`eq("id", "${room.id}")`, { 
+      status: "finished",
+      current_challenge: null,
+      drawn_answers: []
+    });
+    toast.success("Partida finalizada! 🎉");
   };
 
   const kick = async (pid: string) => {
@@ -197,10 +212,12 @@ export default function HostRoom() {
               <p className="display text-5xl md:text-7xl mb-6 leading-none">{room.current_challenge.question}</p>
               <p className="opacity-80 mb-6 text-sm">Resposta: <span className="font-mono font-bold">{room.current_challenge.answer}</span></p>
               <div className="flex gap-3 flex-wrap justify-center">
-                <Button onClick={draw} size="lg" className="rounded-2xl h-12 bg-card text-foreground hover:bg-card/90 border-0">
+                <Button onClick={draw} size="lg" className="rounded-2xl h-12 bg-card text-foreground hover:bg-card/90 border-0" disabled={room.status !== 'playing'}>
                   <SkipForward className="w-4 h-4 mr-2" /> Próximo desafio
                 </Button>
-                <Button onClick={finish} variant="ghost" size="lg" className="rounded-2xl h-12 hover:bg-white/10">Encerrar</Button>
+                <Button onClick={room.status === 'playing' ? finish : start} variant="ghost" size="lg" className="rounded-2xl h-12 hover:bg-white/10">
+                  {room.status === 'playing' ? 'Encerrar' : 'Começar partida'}
+                </Button>
               </div>
               <p className="mt-6 text-xs opacity-70">{room.drawn_answers.length} desafio(s) sorteado(s)</p>
             </div>
@@ -228,7 +245,7 @@ export default function HostRoom() {
                   <span className="font-medium truncate">{p.has_won && "🏆 "}{p.nickname}</span>
                   <p className="text-xs text-muted-foreground">🏆 {p.points || 0} pts</p>
                 </div>
-                <button onClick={() => kick(p.id)} title="Remover jogador da sala" className="text-muted-foreground hover:text-destructive transition-colors ml-2 flex-shrink-0"><X className="w-4 h-4" /></button>
+                <button onClick={() => kick(p.id)} title="Remover jogador da sala" className="text-red-500 hover:text-red-600 transition-colors ml-2 flex-shrink-0"><X className="w-4 h-4" /></button>
               </div>
             ))}
             {!players.length && <p className="text-muted-foreground text-sm col-span-full text-center py-8">Nenhum aluno conectado ainda</p>}
