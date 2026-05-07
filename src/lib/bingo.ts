@@ -150,6 +150,53 @@ export function generateCardForChallenges(rows: number, cols: number, answers: s
   return card;
 }
 
+// Gerar conjunto de desafios com respostas únicas para o jogo
+export function generateGameChallenges(topics: Topic[], diff: Difficulty, count: number): Challenge[] {
+  const challenges: Challenge[] = [];
+  const usedAnswers = new Set<string>();
+  let attempts = 0;
+  const maxAttempts = count * 10; // Limite para evitar loop infinito
+  
+  while (challenges.length < count && attempts < maxAttempts) {
+    const challenge = generateChallenge(topics, diff);
+    
+    // Garantir respostas únicas
+    if (!usedAnswers.has(challenge.answer)) {
+      challenges.push(challenge);
+      usedAnswers.add(challenge.answer);
+    }
+    
+    attempts++;
+  }
+  
+  // Se não conseguir desafios suficientes únicos, completar com qualquer desafio
+  while (challenges.length < count) {
+    const challenge = generateChallenge(topics, diff);
+    challenges.push(challenge);
+  }
+  
+  return challenges;
+}
+
+// Sortear próximo desafio garantindo que a resposta exista nas cartelas
+export function drawNextChallenge(
+  availableChallenges: Challenge[], 
+  drawnAnswers: Set<string>
+): Challenge | null {
+  // Filtrar desafios cujas respostas ainda não foram sorteadas
+  const remainingChallenges = availableChallenges.filter(
+    challenge => !drawnAnswers.has(challenge.answer)
+  );
+  
+  if (remainingChallenges.length === 0) {
+    return null; // Todos os desafios já foram sorteados
+  }
+  
+  // Escolher aleatoriamente um dos desafios restantes
+  const randomIndex = Math.floor(Math.random() * remainingChallenges.length);
+  return remainingChallenges[randomIndex];
+}
+
 export function checkWin(
   card: string[][],
   marked: string[], // "r,c" positions

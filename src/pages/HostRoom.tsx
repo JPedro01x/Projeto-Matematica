@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Play, SkipForward, Trophy, Users, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { Challenge, generateChallenge, Topic, Difficulty, generateCardForChallenges } from "@/lib/bingo";
+import { Challenge, generateChallenge, Topic, Difficulty, generateCardForChallenges, generateGameChallenges, drawNextChallenge } from "@/lib/bingo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Room {
@@ -14,6 +14,7 @@ interface Room {
   win_condition: string; topics: string[]; difficulty: string;
   current_challenge: Challenge | null; drawn_answers: string[]; winner_id: string | null;
   challenge_ended?: boolean;
+  game_challenges?: Challenge[]; // Todos os desafios do jogo pré-gerados
 }
 interface Player { id: string; nickname: string; has_won: boolean; points: number; }
 
@@ -101,32 +102,37 @@ export default function HostRoom() {
   const joinUrl = `${window.location.origin}/entrar?pin=${room.pin}`;
 
   const start = async () => {
-    // Gerar desafios baseados nas operações escolhidas
-    const challenges: Challenge[] = [];
     const maxChallenges = room.rows * room.cols;
     
-    // Gerar todos os desafios possíveis baseados nos tópicos escolhidos
-    for (let i = 0; i < maxChallenges; i++) {
-      const challenge = generateChallenge(room.topics as Topic[], room.difficulty as Difficulty);
-      challenges.push(challenge);
-    }
+    // Gerar TODOS os desafios do jogo com respostas únicas
+    const gameChallenges = generateGameChallenges(
+      room.topics as Topic[], 
+      room.difficulty as Difficulty, 
+      maxChallenges
+    );
     
-    // Atualizar sala com status de playing e os desafios gerados
+    // Sortear o primeiro desafio
+    const firstChallenge = gameChallenges[0];
+    
+    // Atualizar sala com status de playing, os desafios pré-gerados e o primeiro desafio atual
     await localStore.rooms.update(`eq("id", "${room.id}")`, { 
       status: "playing",
-      current_challenge: challenges[0] as any,
-      drawn_answers: [challenges[0].answer]
+      game_challenges: gameChallenges as any,
+      current_challenge: firstChallenge as any,
+      drawn_answers: [firstChallenge.answer]
     });
     
-    // Atualizar cartelas dos jogadores com respostas aleatórias dos desafios
+    // Atualizar cartelas dos jogadores com TODAS as respostas dos desafios
     const { data: playersInRoom } = await localStore.players.select(`eq("room_id", "${room.id}")`);
     if (playersInRoom) {
+      const allAnswers = gameChallenges.map(c => c.answer);
+      
       for (const player of playersInRoom) {
-        // Gerar nova cartela com respostas dos desafios
+        // Gerar nova cartela com TODAS as respostas dos desafios
         const newCard = generateCardForChallenges(
           room.rows, 
           room.cols, 
-          challenges.map(c => c.answer)
+          allAnswers
         );
         
         await localStore.players.update(`eq("id", "${player.id}")`, {
@@ -134,6 +140,8 @@ export default function HostRoom() {
         });
       }
     }
+    
+    toast.success(`Jogo iniciado com ${gameChallenges.length} desafios únicos!`);
   };
 
   const draw = async () => {
@@ -146,20 +154,26 @@ export default function HostRoom() {
       return;
     }
     
-    // Se o desafio já foi finalizado, vai para o próximo
-    const ch = generateChallenge(room.topics as Topic[], room.difficulty as Difficulty);
-    // ensure new answer not already drawn
-    let tries = 0;
-    let next = ch;
-    while (room.drawn_answers.includes(next.answer) && tries < 30) {
-      next = generateChallenge(room.topics as Topic[], room.difficulty as Difficulty);
-      tries++;
+    // Se o desafio já foi finalizado, vai para o próximo usando os desafios pré-gerados
+    const gameChallenges = room.game_challenges || [];
+    const drawnAnswersSet = new Set(room.drawn_answers);
+    
+    // Usar o novo sistema de sorteio controlado
+    const nextChallenge = drawNextChallenge(gameChallenges, drawnAnswersSet);
+    
+    if (!nextChallenge) {
+      toast.error("Todos os desafios já foram sorteados! 🎉");
+      await finish(); // Finalizar o jogo automaticamente
+      return;
     }
+    
     await localStore.rooms.update(`eq("id", "${room.id}")`, {
-      current_challenge: next as any,
-      drawn_answers: [...room.drawn_answers, next.answer],
+      current_challenge: nextChallenge as any,
+      drawn_answers: [...room.drawn_answers, nextChallenge.answer],
       challenge_ended: false
     });
+    
+    toast.success(`Próximo desafio: ${nextChallenge.question}`);
   };
 
   const finish = async () => {

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { validateNicknameContent } from "@/lib/contentFilter";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -18,11 +19,25 @@ export default function Auth() {
       toast.error("Digite seu apelido");
       return;
     }
+    
+    // Validar conteúdo inapropriado
+    const contentValidation = validateNicknameContent(nickname.trim());
+    if (!contentValidation.isValid) {
+      let errorMessage = contentValidation.error;
+      if (contentValidation.suggestion) {
+        errorMessage += ` Sugestão: ${contentValidation.suggestion}`;
+      }
+      toast.error(errorMessage, {
+        duration: 6000,
+      });
+      return;
+    }
+    
     setBusy(true);
     try {
       // Salvar apelido no localStorage
       localStorage.setItem("professor_nickname", nickname.trim());
-      toast.success(`Bem-vindo(a), ${nickname.trim()}!`);
+      toast.success(`Bem-vindo(a), Professor(a) ${nickname.trim()}!`);
       navigate("/professor");
     } catch (err: any) {
       toast.error("Erro ao entrar");

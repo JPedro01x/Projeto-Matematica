@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { localStore } from "@/lib/localStore";
 import { validateNickname } from "@/lib/validation";
+import { checkNicknameAvailability } from "@/lib/nicknameUtils";
+import { validateNicknameContent } from "@/lib/contentFilter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,7 +34,20 @@ export default function JoinRoom() {
     e.preventDefault();
     if (!pin.trim() || !nickname.trim()) return;
     
-    // Validar apelido
+    // Validar apelido - conteúdo inapropriado primeiro
+    const contentValidation = validateNicknameContent(nickname.trim());
+    if (!contentValidation.isValid) {
+      let errorMessage = contentValidation.error;
+      if (contentValidation.suggestion) {
+        errorMessage += ` Sugestão: ${contentValidation.suggestion}`;
+      }
+      toast.error(errorMessage, {
+        duration: 6000,
+      });
+      return;
+    }
+    
+    // Validar formato do apelido
     const validation = validateNickname(nickname.trim());
     if (!validation.valid) {
       toast.error(validation.error);
@@ -74,16 +89,17 @@ export default function JoinRoom() {
       }
       
       // Verificar se já existe jogador com mesmo apelido nesta sala
-      const { data: existingPlayers } = await localStore.players.select(`eq("room_id", "${roomData.id}")`);
-      const nicknameExists = existingPlayers?.some(p => p.nickname.toLowerCase() === nickname.trim().toLowerCase());
-      if (nicknameExists) {
-        toast.error("Este apelido já está em uso na sala 😅");
+      const nicknameCheck = await checkNicknameAvailability(roomData.id, nickname.trim(), localStore);
+      if (!nicknameCheck.isAvailable) {
+        toast.error(`Este apelido já está em uso! Tente: ${nicknameCheck.suggestion} 😅`, {
+          duration: 6000,
+        });
         return;
       }
       
       console.log('Sala encontrada:', roomData);
       console.log('PIN digitado:', pin.trim());
-      console.log('Players existentes:', existingPlayers?.length || 0);
+      console.log('Apelido verificado e disponível');
       
       const card = generateCard(roomData.rows, roomData.cols, roomData.topics as any, roomData.difficulty as any);
       const { data: player } = await localStore.players.insert({

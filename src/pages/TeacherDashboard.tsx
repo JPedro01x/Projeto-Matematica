@@ -17,7 +17,26 @@ interface Room {
   rows: number; cols: number; win_condition: string; created_at: string;
 }
 
-const genPin = () => Math.floor(100000 + Math.random() * 900000).toString();
+const genPin = async (existingRooms: Room[]): Promise<string> => {
+  let attempts = 0;
+  const maxAttempts = 100;
+  
+  while (attempts < maxAttempts) {
+    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Verificar se o PIN já existe
+    const pinExists = existingRooms.some(room => room.pin === pin);
+    
+    if (!pinExists) {
+      return pin;
+    }
+    
+    attempts++;
+  }
+  
+  // Se não conseguir um PIN único após várias tentativas, usar timestamp
+  return Math.floor(100000 + (Date.now() % 900000)).toString();
+};
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -69,8 +88,12 @@ export default function TeacherDashboard() {
   const create = async () => {
     if (!name.trim()) return toast.error("Dê um nome à partida");
     if (!topics.length) return toast.error("Escolha ao menos um conteúdo");
+    
+    // Gerar PIN único
+    const uniquePin = await genPin(rooms);
+    
     const { data } = await localStore.rooms.insert({
-      name, pin: genPin(), rows, cols,
+      name, pin: uniquePin, rows, cols,
       win_condition: winCondition, difficulty, topics,
     });
     if (!data) return toast.error("Erro ao criar sala");
