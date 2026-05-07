@@ -7,6 +7,7 @@ import { ArrowLeft, Play, SkipForward, Trophy, Users, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { Challenge, generateChallenge, Topic, Difficulty, generateCardForChallenges } from "@/lib/bingo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Room {
   id: string; name: string; pin: string; status: string; rows: number; cols: number;
@@ -159,7 +160,10 @@ export default function HostRoom() {
       <header className="border-b border-border/50 bg-card/50 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate("/professor")} className="rounded-full"><ArrowLeft className="w-4 h-4 mr-2" />Painel</Button>
-          <h1 className="font-display text-xl">{room.name}</h1>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <h1 className="font-display text-xl">{room.name}</h1>
+          </div>
           <div className="w-20" />
         </div>
       </header>

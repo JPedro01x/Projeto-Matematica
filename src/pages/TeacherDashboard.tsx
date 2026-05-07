@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sparkles, Plus, LogOut, Play, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_TOPICS, TOPIC_LABELS, Topic, Difficulty } from "@/lib/bingo";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Room {
   id: string; name: string; pin: string; status: string;
@@ -99,7 +100,10 @@ export default function TeacherDashboard() {
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
           </Link>
-          <Button variant="ghost" onClick={logout} className="rounded-full"><LogOut className="w-4 h-4 mr-2" />Sair</Button>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Button variant="ghost" onClick={logout} className="rounded-full"><LogOut className="w-4 h-4 mr-2" />Sair</Button>
+          </div>
         </div>
       </header>
 

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Brain, Users, Trophy, Zap, GraduationCap } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const Index = () => {
   return (
@@ -10,6 +11,7 @@ const Index = () => {
         <div className="flex items-center gap-2 text-foreground">
         </div>
         <div className="flex items-center gap-3">
+          <ThemeToggle />
           <Link to="/entrar"><Button variant="ghost" className="rounded-full">Entrar na sala</Button></Link>
           <Link to="/auth"><Button className="rounded-full bg-gradient-primary hover:opacity-90 border-0 shadow-soft">Sou professor</Button></Link>
         </div>
