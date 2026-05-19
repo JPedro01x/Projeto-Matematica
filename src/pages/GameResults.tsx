@@ -12,7 +12,7 @@ interface Room {
 }
 
 interface Player {
-  id: string; nickname: string; points: number; has_won: boolean;
+  id: string; nickname: string; correct_answers_count: number; has_won: boolean;
 }
 
 export default function GameResults() {
@@ -75,7 +75,7 @@ export default function GameResults() {
   }
 
   const winner = players.find(p => p.id === room.winner_id);
-  const sortedPlayers = [...players].sort((a, b) => b.points - a.points);
+  const sortedPlayers = [...players].sort((a, b) => b.correct_answers_count - a.correct_answers_count);
 
   return (
     <div className="min-h-screen bg-hero pb-10">
@@ -108,7 +108,7 @@ export default function GameResults() {
               <p className="text-2xl font-bold text-gray-800 mb-2">{winner.nickname}</p>
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-100 text-yellow-800">
                 <Star className="w-5 h-5" />
-                <span className="font-bold">{winner.points} pontos</span>
+                <span className="font-bold">{winner.correct_answers_count} acertos</span>
               </div>
             </div>
           </Card>
@@ -164,10 +164,10 @@ export default function GameResults() {
                     </div>
                   </div>
 
-                  {/* Pontuação */}
+                  {/* Acertos */}
                   <div className="text-right">
                     <p className={`font-bold text-lg ${isWinner ? "text-orange-800" : ""}`}>
-                      {player.points} pts
+                      {player.correct_answers_count} acertos
                     </p>
                     {isWinner && (
                       <p className="text-xs text-yellow-600 font-medium">Vencedor</p>
@@ -187,16 +187,16 @@ export default function GameResults() {
           </Card>
           
           <Card className="p-4 rounded-2xl text-center bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-            <p className="text-sm text-green-600 font-medium mb-1">Maior Pontuação</p>
+            <p className="text-sm text-green-600 font-medium mb-1">Máximo de Acertos</p>
             <p className="text-2xl font-bold text-green-800">
-              {players.length > 0 ? Math.max(...players.map(p => p.points)) : 0}
+              {players.length > 0 ? Math.max(...players.map(p => p.correct_answers_count)) : 0}
             </p>
           </Card>
           
           <Card className="p-4 rounded-2xl text-center bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-            <p className="text-sm text-purple-600 font-medium mb-1">Média de Pontos</p>
+            <p className="text-sm text-purple-600 font-medium mb-1">Média de Acertos</p>
             <p className="text-2xl font-bold text-purple-800">
-              {players.length > 0 ? Math.round(players.reduce((sum, p) => sum + p.points, 0) / players.length) : 0}
+              {players.length > 0 ? Math.round(players.reduce((sum, p) => sum + p.correct_answers_count, 0) / players.length) : 0}
             </p>
           </Card>
         </div>

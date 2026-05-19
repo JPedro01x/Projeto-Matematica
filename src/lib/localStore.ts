@@ -25,7 +25,7 @@ interface Player {
   card: string[][];
   marked: string[];
   has_won: boolean;
-  points: number;
+  correct_answers_count: number;
   joined_at: string;
 }
 
@@ -215,7 +215,7 @@ export const localStore = {
         card: data.card || [],
         marked: [],
         has_won: false,
-        points: 0,
+        correct_answers_count: 0,
         joined_at: new Date().toISOString(),
         ...data
       };

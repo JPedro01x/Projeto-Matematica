@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { ArrowLeft, Play, SkipForward, Trophy, Users, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
-import { Challenge, generateChallenge, Topic, Difficulty, generateCardForChallenges, generateGameChallenges, drawNextChallenge } from "@/lib/bingo";
+import { Challenge, generateChallenge, Topic, Difficulty, generateCardForChallenges, generateGameChallenges, drawNextChallenge, allEligiblePlayersResponded } from "@/lib/bingo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 interface Room {
@@ -18,7 +18,7 @@ interface Room {
   first_correct_player?: string | null; // ID do primeiro jogador a acertar o desafio atual
   players_responded?: string[]; // IDs dos jogadores que já responderam ao desafio atual
 }
-interface Player { id: string; nickname: string; has_won: boolean; points: number; }
+interface Player { id: string; nickname: string; has_won: boolean; correct_answers_count: number; }
 
 export default function HostRoom() {
   const { id } = useParams<{ id: string }>();
@@ -104,7 +104,7 @@ export default function HostRoom() {
   const joinUrl = `${window.location.origin}/entrar?pin=${room.pin}`;
 
   const start = async () => {
-    const maxChallenges = room.rows * room.cols;
+    const maxChallenges = room.rows * room.cols - (room.rows === 5 && room.cols === 5 ? 1 : 0);
     
     // Gerar TODOS os desafios do jogo com respostas únicas
     const gameChallenges = generateGameChallenges(
@@ -263,9 +263,46 @@ export default function HostRoom() {
                     </span>
                     <span className="text-sm opacity-80">jogadores responderam</span>
                   </div>
+                  {(() => {
+                    // Calcular quantos jogadores são elegíveis (têm a resposta na cartela)
+                    const eligibleCount = players.filter(p =>
+                      p.card.some(row => row.some(cell => cell === room.current_challenge?.answer))
+                    ).length;
+
+                    const eligibleResponded = players.filter(p =>
+                      p.card.some(row => row.some(cell => cell === room.current_challenge?.answer)) &&
+                      room.players_responded?.includes(p.id)
+                    ).length;
+
+                    return (
+                      <div className="flex items-center justify-center gap-2 mt-2">
+                        <span className="text-sm font-bold text-green-300">
+                          {eligibleResponded} / {eligibleCount}
+                        </span>
+                        <span className="text-xs opacity-80">jogadores elegíveis responderam</span>
+                      </div>
+                    );
+                  })()}
                   {room.players_responded && room.players_responded.length === players.length && (
                     <p className="text-sm text-green-300 mt-2 text-center">✅ Todos responderam! Desafio será finalizado automaticamente...</p>
                   )}
+                  {(() => {
+                    const eligibleResponded = players.filter(p =>
+                      p.card.some(row => row.some(cell => cell === room.current_challenge?.answer)) &&
+                      room.players_responded?.includes(p.id)
+                    ).length;
+
+                    const totalEligible = players.filter(p =>
+                      p.card.some(row => row.some(cell => cell === room.current_challenge?.answer))
+                    ).length;
+
+                    if (eligibleResponded === totalEligible && totalEligible > 0) {
+                      return (
+                        <p className="text-sm text-blue-300 mt-2 text-center">🎯 Todos os jogadores elegíveis responderam! Desafio será finalizado automaticamente...</p>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
               
@@ -274,10 +311,10 @@ export default function HostRoom() {
                 <div className="mt-6 p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
                   <p className="text-sm uppercase tracking-wider opacity-80 mb-1">Líder Atual</p>
                   {(() => {
-                    const leader = players.reduce((prev, current) => (prev.points > current.points) ? prev : current);
+                    const leader = players.reduce((prev, current) => (prev.correct_answers_count > current.correct_answers_count) ? prev : current);
                     return (
                       <p className="text-2xl font-bold flex items-center justify-center gap-2">
-                        🏆 {leader.nickname} <span className="text-lg opacity-80">({leader.points} pts)</span>
+                        🏆 {leader.nickname} <span className="text-lg opacity-80">({leader.correct_answers_count} acertos)</span>
                       </p>
                     );
                   })()}
@@ -306,7 +343,7 @@ export default function HostRoom() {
               <div key={p.id} className={`flex items-center justify-between p-3 rounded-xl border transition-all ${p.has_won ? "bg-success/10 border-success" : "bg-muted border-border hover:border-destructive/50 hover:bg-muted/70"}`}>
                 <div className="flex-1">
                   <span className="font-medium truncate">{p.has_won && "🏆 "}{p.nickname}</span>
-                  <p className="text-xs text-muted-foreground">🏆 {p.points || 0} pts</p>
+                  <p className="text-xs text-muted-foreground">✓ {p.correct_answers_count || 0} acertos</p>
                 </div>
                 <button onClick={() => kick(p.id)} title="Remover jogador da sala" className="text-red-500 hover:text-red-600 transition-colors ml-2 flex-shrink-0"><X className="w-4 h-4" /></button>
               </div>

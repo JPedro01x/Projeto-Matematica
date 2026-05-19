@@ -112,41 +112,85 @@ export function buildAnswerPool(topics: Topic[], diff: Difficulty, size: number)
   return Array.from(set);
 }
 
+function parseAnswerValue(answer: string): number | string {
+  const normalized = answer.replace(/−/g, "-").replace(/,/g, ".").trim();
+  const integerMatch = normalized.match(/^(-?\d+)(?:\.\d+)?$/);
+  if (integerMatch) return parseFloat(normalized);
+
+  const fractionMatch = normalized.match(/^(-?\d+)[\\/](\d+)$/);
+  if (fractionMatch) {
+    const numerator = Number(fractionMatch[1]);
+    const denominator = Number(fractionMatch[2]);
+    return denominator === 0 ? normalized : numerator / denominator;
+  }
+
+  return normalized;
+}
+
+function compareAnswers(a: string, b: string): number {
+  const va = parseAnswerValue(a);
+  const vb = parseAnswerValue(b);
+  const aIsNumber = typeof va === "number";
+  const bIsNumber = typeof vb === "number";
+
+  if (aIsNumber && bIsNumber) return va - vb;
+  if (aIsNumber) return -1;
+  if (bIsNumber) return 1;
+  return String(va).localeCompare(String(vb), "pt-BR", { numeric: true, sensitivity: "base" });
+}
+
+function distributeAnswersByColumns(rows: number, cols: number, cells: string[]): string[][] {
+  const sorted = [...cells].sort(compareAnswers);
+  const columns: string[][] = Array.from({ length: cols }, () => []);
+
+  for (let i = 0; i < sorted.length; i++) {
+    const col = Math.floor(i / rows);
+    columns[col]?.push(sorted[i]);
+  }
+
+  const card: string[][] = Array.from({ length: rows }, () => Array(cols).fill(""));
+  for (let c = 0; c < cols; c++) {
+    const columnValues = [...(columns[c] || [])].sort((a, b) => {
+      const numA = parseFloat(a);
+      const numB = parseFloat(b);
+      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+      return a.localeCompare(b);
+    });
+    for (let r = 0; r < rows; r++) {
+      card[r][c] = columnValues[r] ?? "";
+    }
+  }
+
+  return card;
+}
+
 export function generateCard(rows: number, cols: number, topics: Topic[], diff: Difficulty): string[][] {
   const pool = buildAnswerPool(topics, diff, rows * cols * 3);
-  const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, rows * cols);
-  const card: string[][] = [];
-  for (let r = 0; r < rows; r++) card.push(shuffled.slice(r * cols, r * cols + cols));
-  return card;
+  const selected = pool.sort(() => Math.random() - 0.5).slice(0, rows * cols);
+  return distributeAnswersByColumns(rows, cols, selected);
 }
 
 // Gerar cartela com respostas específicas dos desafios
 export function generateCardForChallenges(rows: number, cols: number, answers: string[]): string[][] {
   const totalCells = rows * cols;
-  
-  // Garantir que TODAS as respostas corretas estejam na cartela
-  const allAnswers = [...answers];
-  const shuffledAnswers = [...answers].sort(() => Math.random() - 0.5);
-  
-  // Se houver mais respostas que células, usar apenas as que cabem
-  const answersToFit = shuffledAnswers.slice(0, Math.min(totalCells, shuffledAnswers.length));
-  
-  // Preencher o restante com números aleatórios
-  const remainingCells = totalCells - answersToFit.length;
-  const randomNumbers = [];
-  for (let i = 0; i < remainingCells; i++) {
-    randomNumbers.push(String(Math.floor(Math.random() * 999) + 1));
+  const uniqueAnswers = Array.from(new Set(answers));
+  const trimmed = uniqueAnswers.slice(0, totalCells);
+  const cells = [...trimmed];
+
+  while (cells.length < totalCells) {
+    const randomValue = String(Math.floor(Math.random() * 999) + 1);
+    if (!cells.includes(randomValue)) {
+      cells.push(randomValue);
+    }
   }
-  
-  // Combinar e embaralhar tudo
-  const allCells = [...answersToFit, ...randomNumbers].sort(() => Math.random() - 0.5);
-  
-  // Criar matriz da cartela
-  const card: string[][] = [];
-  for (let r = 0; r < rows; r++) {
-    card.push(allCells.slice(r * cols, r * cols + cols));
+
+  const card = distributeAnswersByColumns(rows, cols, cells);
+
+  // Add free space in the center for 5x5 bingo cards
+  if (rows === 5 && cols === 5) {
+    card[2][2] = "FREE";
   }
-  
+
   return card;
 }
 
@@ -204,7 +248,7 @@ export function checkWin(
 ): boolean {
   const rows = card.length;
   const cols = card[0]?.length ?? 0;
-  const isMarked = (r: number, c: number) => marked.includes(`${r},${c}`);
+  const isMarked = (r: number, c: number) => marked.includes(`${r},${c}`) || card[r][c] === "FREE";
 
   if (condition === "full") {
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) if (!isMarked(r, c)) return false;
@@ -248,5 +292,28 @@ export const TOPIC_LABELS: Record<Topic, string> = {
   "porcentagem": "Porcentagem",
   "logica": "Raciocínio lógico",
 };
+
+// Verifica se todos os jogadores elegíveis já responderam
+// Um jogador é elegível se tem a resposta correta na sua cartela
+export function allEligiblePlayersResponded(
+  players: Array<{ id: string; card: string[][]; marked: string[] }>,
+  correctAnswer: string,
+  playersResponded: string[]
+): boolean {
+  // Para cada jogador, verificar se ele é elegível (tem a resposta na cartela)
+  for (const player of players) {
+    // Verificar se o jogador tem a resposta correta na cartela
+    const hasCorrectAnswer = player.card.some(row =>
+      row.some(cell => cell === correctAnswer)
+    );
+
+    // Se o jogador tem a resposta correta mas ainda não respondeu, não terminamos
+    if (hasCorrectAnswer && !playersResponded.includes(player.id)) {
+      return false;
+    }
+  }
+
+  return true;
+}
 
 export const ALL_TOPICS = Object.keys(TOPIC_LABELS) as Topic[];
