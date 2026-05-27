@@ -436,7 +436,7 @@ export default function PlayRoom() {
                     key={key}
                     onClick={() => toggleMark(r, c)}
                     disabled={isDisabled}
-                    className={`aspect-square min-h-[5rem] rounded-none flex items-center justify-center text-center px-2 font-semibold text-base sm:text-lg transition-all bg-white border border-slate-200 ${
+                    className={`aspect-square min-h-[5rem] rounded-none flex items-center justify-center text-center px-2 font-semibold text-base sm:text-lg transition-all border border-slate-200 ${
                       isFree
                         ? "bg-emerald-600 text-white border-emerald-700 shadow-inner"
                         : isCorrectAndMarked || revealCorrect
@@ -444,10 +444,12 @@ export default function PlayRoom() {
                         : isWrongAndMarked
                         ? "bg-rose-500 text-white border-rose-600 shadow-inner"
                         : isSelected
-                        ? "bg-sky-500 text-white border-sky-600 shadow-lg"
+                        ? "bg-sky-500/30 text-sky-900 border-sky-400 shadow-md"
+                        : isMarked
+                        ? "bg-emerald-100 text-emerald-900 border-emerald-300"
                         : isDisabled
                         ? "bg-slate-100 text-slate-500 border-slate-200 opacity-70 cursor-not-allowed"
-                        : "hover:bg-slate-50"
+                        : "bg-white hover:bg-slate-50"
                     }`}
                   >
                     <span className="break-words whitespace-normal">
