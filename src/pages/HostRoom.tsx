@@ -33,6 +33,8 @@ export default function HostRoom() {
     const professorNickname = localStorage.getItem("professor_nickname");
     if (!professorNickname) {
       navigate("/auth");
+      toast.error("Todos os desafios ja foram sorteados. A partida so encerra quando alguem fizer bingo ou quando voce encerrar manualmente.");
+      return;
       return;
     }
   }, [navigate]);
@@ -186,7 +188,8 @@ export default function HostRoom() {
     // Se o desafio já foi finalizado, vai para o próximo usando os desafios pré-gerados
     const result = await advanceToNextChallenge(localStore, room.id);
     
-    if (result === "finished") {
+    if (result === "exhausted") {
+      toast.error("Todos os desafios ja foram sorteados. A partida so encerra quando alguem fizer bingo ou quando voce encerrar manualmente.");
       toast.error("Todos os desafios já foram sorteados! 🎉");
       return;
     }

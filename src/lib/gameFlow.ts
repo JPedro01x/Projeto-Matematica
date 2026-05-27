@@ -21,12 +21,10 @@ export async function advanceToNextChallenge(localStore: StoreLike, roomId: stri
 
   if (!nextChallenge) {
     await localStore.rooms.update(`eq("id", "${roomId}")`, {
-      status: "finished",
-      current_challenge: null,
-      challenge_ended: false,
-      timer_paused: false,
+      challenge_ended: true,
+      timer_paused: true,
     });
-    return "finished";
+    return "exhausted";
   }
 
   await localStore.rooms.update(`eq("id", "${roomId}")`, {

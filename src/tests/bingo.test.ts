@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateCardForChallenges } from "@/lib/bingo";
+import { checkWin, generateCardForChallenges, generateGameChallenges, getChallengeCount } from "@/lib/bingo";
 
 const makeRandom = (seed: number) => {
   let state = seed;
@@ -25,5 +25,39 @@ describe("generateCardForChallenges", () => {
     const secondCard = generateCardForChallenges(5, 5, answers, makeRandom(29));
 
     expect(JSON.stringify(firstCard)).not.toEqual(JSON.stringify(secondCard));
+  });
+});
+
+describe("getChallengeCount", () => {
+  it("uses every playable cell so winning depends on the selected bingo condition", () => {
+    expect(getChallengeCount(5, 5, "line")).toBe(24);
+    expect(getChallengeCount(5, 5, "column")).toBe(24);
+    expect(getChallengeCount(5, 5, "diagonal")).toBe(24);
+    expect(getChallengeCount(5, 5, "full")).toBe(24);
+    expect(getChallengeCount(4, 4, "full")).toBe(16);
+  });
+});
+
+describe("checkWin", () => {
+  const card = [
+    ["1", "2", "3"],
+    ["4", "5", "6"],
+    ["7", "8", "9"],
+  ];
+
+  it("matches only the selected win condition", () => {
+    expect(checkWin(card, ["0,0", "0,1", "0,2"], "line")).toBe(true);
+    expect(checkWin(card, ["0,0", "1,0", "2,0"], "column")).toBe(true);
+    expect(checkWin(card, ["0,0", "1,1", "2,2"], "diagonal")).toBe(true);
+    expect(checkWin(card, ["0,0", "0,1", "0,2"], "full")).toBe(false);
+  });
+});
+
+describe("generateGameChallenges", () => {
+  it("keeps challenge answers unique even when fallback challenges are needed", () => {
+    const challenges = generateGameChallenges(["fracoes"], "facil", 40);
+    const answers = challenges.map(challenge => challenge.answer);
+
+    expect(new Set(answers).size).toBe(answers.length);
   });
 });

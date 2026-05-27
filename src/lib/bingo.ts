@@ -246,8 +246,10 @@ export function generateGameChallenges(topics: Topic[], diff: Difficulty, count:
   
   // Se não conseguir desafios suficientes únicos, completar com qualquer desafio
   while (challenges.length < count) {
-    const challenge = generateChallenge(topics, diff);
-    challenges.push(challenge);
+    let answer = String(1000 + challenges.length);
+    while (usedAnswers.has(answer)) answer = String(Number(answer) + 1);
+    challenges.push({ question: `0 + ${answer}`, answer, topic: "operacoes" });
+    usedAnswers.add(answer);
   }
   
   return challenges;
@@ -261,13 +263,7 @@ export function getChallengeCount(
 ): number {
   const freeSpace = rows === 5 && cols === 5 ? 1 : 0;
   const playableCells = Math.max(1, rows * cols - freeSpace);
-  const shortestWin =
-    winCondition === "column" ? rows :
-    winCondition === "diagonal" ? Math.min(rows, cols) :
-    winCondition === "full" ? Math.ceil(playableCells * 0.45) :
-    cols;
-
-  return Math.min(playableCells, Math.max(shortestWin + 2, Math.ceil(playableCells * 0.4)));
+  return playableCells;
 }
 
 export function drawNextChallenge(
@@ -316,14 +312,13 @@ export function checkWin(
     }
   }
   if (condition === "diagonal") {
-    if (rows === cols) {
-      let ok = true;
-      for (let i = 0; i < rows; i++) if (!isMarked(i, i)) { ok = false; break; }
-      if (ok) return true;
-      ok = true;
-      for (let i = 0; i < rows; i++) if (!isMarked(i, cols - 1 - i)) { ok = false; break; }
-      if (ok) return true;
-    }
+    const diagonalLength = Math.min(rows, cols);
+    let ok = true;
+    for (let i = 0; i < diagonalLength; i++) if (!isMarked(i, i)) { ok = false; break; }
+    if (ok) return true;
+    ok = true;
+    for (let i = 0; i < diagonalLength; i++) if (!isMarked(i, cols - 1 - i)) { ok = false; break; }
+    if (ok) return true;
   }
   return false;
 }

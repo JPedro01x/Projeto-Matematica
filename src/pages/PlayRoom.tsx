@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { localStore } from "@/lib/localStore";
 import { Card } from "@/components/ui/card";
@@ -31,6 +31,8 @@ export default function PlayRoom() {
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [timerEnded, setTimerEnded] = useState(false);
   const [lastChallengeId, setLastChallengeId] = useState<string>("");
+  const [winnerName, setWinnerName] = useState<string | null>(null);
+  const notifiedWinnerId = useRef<string | null>(null);
 
   const cardLabels = (cols: number) =>
     cols === 5 ? ["B", "I", "N", "G", "O"] : Array.from({ length: cols }, (_, i) => `C${i + 1}`);
@@ -155,10 +157,21 @@ export default function PlayRoom() {
           
           // Redirecionar para resultados se a partida foi encerrada
           if (roomData.status === 'finished') {
+            let winnerNickname = "um jogador";
+            if (roomData.winner_id) {
+              const { data: winnerData } = await localStore.players.select(`eq("id", "${roomData.winner_id}")`);
+              winnerNickname = winnerData?.[0]?.nickname || winnerNickname;
+              setWinnerName(winnerNickname);
+            }
             toast.success("Partida encerrada! Redirecionando para resultados... 🏆");
+            if (notifiedWinnerId.current !== roomData.winner_id) {
+              notifiedWinnerId.current = roomData.winner_id;
+              toast.success(`Vencedor: ${winnerNickname}`);
+            }
+
             setTimeout(() => {
               navigate(`/resultados/${roomId}`);
-            }, 2000);
+            }, 3500);
             return;
           }
         }
@@ -283,6 +296,7 @@ export default function PlayRoom() {
       if (hasWon) {
         await localStore.players.update(`eq("id", "${player.id}")`, { has_won: true });
         await localStore.rooms.update(`eq("id", "${room.id}")`, { winner_id: player.id, status: "finished" });
+        setWinnerName(player.nickname);
         toast.success("BINGO! Voce venceu!");
         return;
       }
@@ -332,7 +346,9 @@ export default function PlayRoom() {
 
       const won = checkWin(player.card, player.marked, room.win_condition);
       if (won && !player.has_won) {
+        await localStore.players.update(`eq("id", "${player.id}")`, { has_won: true });
         await localStore.rooms.update(`eq("id", "${room.id}")`, { winner_id: player.id, status: "finished" });
+        setWinnerName(player.nickname);
         toast.success("BINGO! 🎉");
       }
     } else {
@@ -399,6 +415,10 @@ export default function PlayRoom() {
           <Card className="p-6 text-center rounded-3xl shadow-card mb-6 bg-gradient-accent border-0">
             <Trophy className="w-10 h-10 mx-auto mb-2" />
             <p className="display text-2xl">Partida encerrada</p>
+            <p className="font-bold mt-1">
+              {winnerName ? `Vencedor: ${winnerName}` : "Temos um vencedor!"}
+            </p>
+            <p className="text-sm mt-2 opacity-80">Redirecionando para os resultados...</p>
             {player.has_won && <p className="font-bold mt-1">Você venceu! 🎉</p>}
           </Card>
         )}
