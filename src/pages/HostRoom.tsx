@@ -246,49 +246,49 @@ export default function HostRoom() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => navigate("/professor")} className="rounded-full"><ArrowLeft className="w-4 h-4 mr-2" />Painel</Button>
-          <div className="flex min-w-0 items-center gap-3">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-2 sm:gap-3">
+          <Button variant="ghost" onClick={() => navigate("/professor")} className="rounded-full px-3 sm:px-4"><ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />Painel</Button>
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
             <ThemeToggle />
-            <h1 className="font-display text-lg sm:text-xl truncate">{room.name}</h1>
+            <h1 className="font-display text-base sm:text-xl truncate">{room.name}</h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 grid lg:grid-cols-3 gap-4 sm:gap-6">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8 grid lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Left: PIN + QR */}
-        <Card className="p-5 sm:p-6 rounded-2xl shadow-card lg:col-span-1 bg-gradient-card">
+        <Card className="p-4 sm:p-6 rounded-2xl shadow-card lg:col-span-1 bg-gradient-card">
           <p className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Código PIN</p>
           <div className="flex flex-wrap items-center gap-3 my-2">
-            <p className="display text-5xl sm:text-6xl text-gradient">{room.pin}</p>
+            <p className="display text-4xl sm:text-6xl text-gradient">{room.pin}</p>
             <Button type="button" variant="outline" size="icon" onClick={copyPin} className="rounded-xl" title="Copiar PIN">
               <Copy className="w-4 h-4" />
             </Button>
           </div>
           <p className="text-sm text-muted-foreground mb-4">A turma entra em <span className="font-mono font-semibold text-foreground">/entrar</span></p>
-          <div className="bg-card p-4 rounded-2xl flex items-center justify-center">
-            <QRCodeSVG value={joinUrl} size={180} />
+          <div className="bg-card p-3 sm:p-4 rounded-2xl flex items-center justify-center">
+            <QRCodeSVG value={joinUrl} size={160} className="h-40 w-40 sm:h-[180px] sm:w-[180px]" />
           </div>
           <p className="text-xs text-center text-muted-foreground mt-3">Aponte a câmera para entrar</p>
         </Card>
 
         {/* Center: Challenge */}
-        <Card className="p-6 rounded-3xl shadow-card lg:col-span-2 bg-gradient-primary text-primary-foreground border-0">
+        <Card className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-card lg:col-span-2 bg-gradient-primary text-primary-foreground border-0">
           {room.status === "waiting" && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-12">
-              <h2 className="display text-3xl mb-2">Sala aberta</h2>
+            <div className="flex flex-col items-center justify-center h-full text-center py-8 sm:py-12">
+              <h2 className="display text-2xl sm:text-3xl mb-2">Sala aberta</h2>
               <p className="opacity-90 mb-6">{players.length} aluno(s) na sala</p>
-              <Button onClick={start} disabled={!players.length} size="lg" className="rounded-2xl h-14 px-8 bg-card text-foreground hover:bg-card/90 border-0 text-lg shadow-pop">
+              <Button onClick={start} disabled={!players.length} size="lg" className="rounded-2xl h-12 sm:h-14 w-full sm:w-auto px-6 sm:px-8 bg-card text-foreground hover:bg-card/90 border-0 text-base sm:text-lg shadow-pop">
                 <Play className="w-5 h-5 mr-2" /> Começar partida
               </Button>
             </div>
           )}
           {room.status === "playing" && room.current_challenge && (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8 animate-pop-in" key={room.current_challenge.question}>
+            <div className="flex flex-col items-center justify-center h-full text-center py-6 sm:py-8 animate-pop-in" key={room.current_challenge.question}>
               <p className="text-sm uppercase tracking-widest opacity-80 mb-2">Desafio</p>
-              <p className="display text-5xl md:text-7xl mb-6 leading-none">{room.current_challenge.question}</p>
+              <p className="display text-4xl sm:text-5xl md:text-7xl mb-5 sm:mb-6 leading-none break-words max-w-full">{room.current_challenge.question}</p>
               <p className="opacity-80 mb-6 text-sm">Resposta: <span className="font-mono font-bold">{room.current_challenge.answer}</span></p>
-              <div className="flex gap-3 flex-wrap justify-center">
+              <div className="flex w-full flex-col sm:w-auto sm:flex-row gap-3 flex-wrap justify-center">
                 <Button onClick={draw} size="lg" className="rounded-2xl h-12 bg-card text-foreground hover:bg-card/90 border-0" disabled={room.status !== 'playing'}>
                   <SkipForward className="w-4 h-4 mr-2" /> {room.challenge_ended ? 'Próximo desafio' : 'Finalizar desafio'}
                 </Button>
@@ -381,11 +381,11 @@ export default function HostRoom() {
         </Card>
 
         {/* Players */}
-        <Card className="p-6 rounded-3xl shadow-card lg:col-span-3">
-          <div className="flex items-center gap-2 mb-4">
+        <Card className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl shadow-card lg:col-span-3">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             <Users className="w-5 h-5" />
             <h3 className="font-bold">{players.length} Jogador{players.length !== 1 ? 'es' : ''}</h3>
-            <span className="text-xs text-muted-foreground ml-auto">Clique no X para remover</span>
+            <span className="text-xs text-muted-foreground sm:ml-auto">Clique no X para remover</span>
           </div>
           <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
             {players.map(p => (

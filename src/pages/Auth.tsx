@@ -48,16 +48,16 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen bg-hero flex items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center bg-hero px-4 py-6 sm:p-6">
       <div className="w-full max-w-md">
-        <div className="flex items-center justify-between mb-6">
+        <div className="mb-4 flex items-center justify-between sm:mb-6">
           <Link to="/" className="inline-flex items-center gap-2 text-primary-foreground/90 hover:text-primary-foreground">
             <ArrowLeft className="w-4 h-4" /> Voltar
           </Link>
           <ThemeToggle />
         </div>
-        <Card className="p-8 rounded-3xl shadow-glow border-0">
-          <div className="flex items-center gap-3 mb-6">
+        <Card className="rounded-2xl border-0 p-5 shadow-glow sm:rounded-3xl sm:p-8">
+          <div className="mb-5 flex items-center gap-3 sm:mb-6">
             <div className="w-11 h-11 rounded-2xl bg-gradient-primary flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-primary-foreground" />
             </div>
@@ -77,10 +77,10 @@ export default function Auth() {
                 value={nickname} 
                 onChange={(e) => setNickname(e.target.value)} 
                 placeholder="Ex: Professor João"
-                className="rounded-xl h-12 mt-1.5" 
+                className="mt-1.5 h-12 rounded-xl" 
               />
             </div>
-            <Button type="submit" disabled={busy} className="w-full h-12 rounded-xl bg-gradient-primary hover:opacity-90 border-0 text-base">
+            <Button type="submit" disabled={busy} className="h-12 w-full rounded-xl border-0 bg-gradient-primary text-base hover:opacity-90">
               {busy ? "Aguarde…" : "Entrar como professor"}
             </Button>
           </form>

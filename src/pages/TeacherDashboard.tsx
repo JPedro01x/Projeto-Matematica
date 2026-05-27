@@ -133,7 +133,7 @@ export default function TeacherDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
           </Link>
           <div className="flex items-center gap-3">
@@ -143,21 +143,21 @@ export default function TeacherDashboard() {
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
-        <div className="flex items-end justify-between mb-8 flex-wrap gap-4">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6 sm:mb-8 gap-4">
           <div>
-            <h1 className="display text-4xl md:text-5xl">Suas partidas</h1>
-            <p className="text-muted-foreground mt-2">Crie uma sala e compartilhe o PIN com a turma.</p>
+            <h1 className="display text-3xl sm:text-4xl md:text-5xl">Suas partidas</h1>
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">Crie uma sala e compartilhe o PIN com a turma.</p>
           </div>
-          <Button onClick={() => setCreating(true)} className="rounded-2xl h-12 px-6 bg-gradient-primary border-0 shadow-soft">
+          <Button onClick={() => setCreating(true)} className="rounded-2xl h-12 w-full sm:w-auto px-6 bg-gradient-primary border-0 shadow-soft">
             <Plus className="w-5 h-5 mr-2" /> Nova partida
           </Button>
         </div>
 
         {creating && (
-          <Card className="p-6 md:p-8 rounded-3xl mb-8 shadow-card animate-pop-in">
-            <h2 className="display text-2xl mb-5">Configurar partida</h2>
-            <div className="grid md:grid-cols-2 gap-5">
+          <Card className="p-4 sm:p-6 md:p-8 rounded-2xl md:rounded-3xl mb-6 sm:mb-8 shadow-card animate-pop-in">
+            <h2 className="display text-xl sm:text-2xl mb-4 sm:mb-5">Configurar partida</h2>
+            <div className="grid md:grid-cols-2 gap-4 md:gap-5">
               <div className="md:col-span-2">
                 <Label>Nome da partida</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Revisão 7º ano" className="rounded-xl h-11 mt-1.5" />
@@ -205,7 +205,7 @@ export default function TeacherDashboard() {
                 </div>
               </div>
             </div>
-            <div className="flex gap-3 mt-6">
+            <div className="flex flex-col sm:flex-row gap-3 mt-6">
               <Button onClick={create} className="rounded-xl bg-gradient-primary border-0 h-11 px-6">Criar partida</Button>
               <Button variant="ghost" onClick={() => setCreating(false)} className="rounded-xl h-11">Cancelar</Button>
             </div>
@@ -214,13 +214,13 @@ export default function TeacherDashboard() {
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {rooms.map(r => (
-            <Card key={r.id} className="p-5 rounded-2xl shadow-card border-border/50 hover:shadow-glow transition-shadow">
-              <div className="flex items-start justify-between mb-3">
-                <div>
+            <Card key={r.id} className="p-4 sm:p-5 rounded-2xl shadow-card border-border/50 hover:shadow-glow transition-shadow">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="min-w-0">
                   <h3 className="font-bold text-lg">{r.name}</h3>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mt-1">PIN · <span className="font-mono text-base text-foreground tracking-wider">{r.pin}</span></p>
                 </div>
-                <span className={`text-xs px-2 py-1 rounded-full font-semibold ${r.status === "waiting" ? "bg-secondary/30 text-secondary-foreground" : r.status === "playing" ? "bg-accent/30" : "bg-muted text-muted-foreground"}`}>
+                <span className={`text-xs px-2 py-1 rounded-full font-semibold shrink-0 ${r.status === "waiting" ? "bg-secondary/30 text-secondary-foreground" : r.status === "playing" ? "bg-accent/30" : "bg-muted text-muted-foreground"}`}>
                   {r.status === "waiting" ? "Aguardando" : r.status === "playing" ? "Em jogo" : "Encerrada"}
                 </span>
               </div>

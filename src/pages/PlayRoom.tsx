@@ -360,26 +360,26 @@ export default function PlayRoom() {
 
   return (
     <div className="min-h-screen bg-background pb-10">
-      <header className="bg-gradient-primary text-primary-foreground px-6 py-4 sticky top-0 z-10 shadow-soft">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+      <header className="sticky top-0 z-10 bg-gradient-primary px-3 py-3 text-primary-foreground shadow-soft sm:px-6 sm:py-4">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5" />
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl px-4 py-2 shadow-lg border border-white/50">
-              <p className="font-bold text-base text-foreground">{player.nickname}</p>
-              <p className="text-sm text-muted-foreground">{room.name}</p>
-              <p className="text-sm font-bold text-primary flex items-center gap-1">
+            <div className="min-w-0 rounded-xl border border-white/50 bg-white/90 px-3 py-2 shadow-lg backdrop-blur-sm sm:px-4">
+              <p className="truncate text-sm font-bold text-slate-900 sm:text-base">{player.nickname}</p>
+              <p className="truncate text-xs text-slate-600 sm:text-sm">{room.name}</p>
+              <p className="flex items-center gap-1 text-xs font-bold text-sky-700 sm:text-sm">
                 <Trophy className="w-4 h-4" /> {player.correct_answers_count} acertos
               </p>
             </div>
           </div>
-          {player.has_won && <span className="bg-secondary text-secondary-foreground font-bold px-3 py-1 rounded-full text-sm flex items-center gap-1"><Trophy className="w-4 h-4" />Bingo!</span>}
+          {player.has_won && <span className="bg-secondary text-secondary-foreground font-bold px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm flex items-center gap-1"><Trophy className="w-4 h-4" />Bingo!</span>}
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-6">
+      <main className="mx-auto max-w-2xl px-2.5 py-4 sm:px-4 sm:py-6">
         {/* Current challenge */}
         {room.status === "waiting" && (
-          <Card className="p-12 text-center rounded-3xl shadow-glow mb-6 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20 flex flex-col items-center justify-center min-h-96">
+          <Card className="mb-4 flex min-h-80 flex-col items-center justify-center rounded-2xl border-primary/20 bg-gradient-to-br from-primary/10 to-primary/5 p-6 text-center shadow-glow sm:mb-6 sm:min-h-96 sm:rounded-3xl sm:p-12">
             <div className="flex flex-col items-center justify-center">
               <Loader className="w-16 h-16 text-primary mb-4 animate-spin" />
               <p className="display text-3xl mb-3">Sala pronta! 🎮</p>
@@ -392,9 +392,9 @@ export default function PlayRoom() {
           </Card>
         )}
         {room.status === "playing" && room.current_challenge && (
-          <Card className="p-6 text-center rounded-3xl shadow-glow mb-6 bg-gradient-fun border-0">
+          <Card className="mb-4 rounded-2xl border-0 bg-gradient-fun p-4 text-center shadow-glow sm:mb-6 sm:rounded-3xl sm:p-6">
             <p className="text-xs uppercase tracking-widest font-bold text-secondary-foreground/80 mb-1">Desafio</p>
-            <p className="display text-4xl md:text-5xl text-secondary-foreground" key={room.current_challenge.question}>
+            <p className="display break-words text-3xl text-secondary-foreground sm:text-4xl md:text-5xl" key={room.current_challenge.question}>
               {room.current_challenge.question}
             </p>
             <p className="text-sm text-secondary-foreground/70 mt-2">Resolva e marque na cartela ⬇️</p>
@@ -412,7 +412,7 @@ export default function PlayRoom() {
           />
         )}
         {room.status === "finished" && (
-          <Card className="p-6 text-center rounded-3xl shadow-card mb-6 bg-gradient-accent border-0">
+          <Card className="mb-4 rounded-2xl border-0 bg-gradient-accent p-4 text-center shadow-card sm:mb-6 sm:rounded-3xl sm:p-6">
             <Trophy className="w-10 h-10 mx-auto mb-2" />
             <p className="display text-2xl">Partida encerrada</p>
             <p className="font-bold mt-1">
@@ -427,16 +427,16 @@ export default function PlayRoom() {
         {room.status === "playing" && (
           <>
           <div className="mb-3 flex justify-end">
-            <Button type="button" variant="outline" onClick={downloadCard} className="rounded-xl bg-card/90 shadow-soft">
+            <Button type="button" variant="outline" onClick={downloadCard} className="h-10 rounded-xl bg-card/90 px-3 text-sm shadow-soft sm:h-11 sm:px-4">
               <Download className="w-4 h-4" />
               Baixar cartela
             </Button>
           </div>
-          <div className="rounded-[2rem] overflow-hidden border border-slate-200 shadow-soft">
-            <div className="grid bg-slate-100 text-slate-600 text-xs uppercase tracking-[0.2em] sm:tracking-[0.35em] font-semibold"
+          <div className="overflow-hidden rounded-2xl border border-slate-200 shadow-soft sm:rounded-[2rem]">
+            <div className="grid bg-slate-100 text-slate-600 text-[0.65rem] uppercase tracking-[0.12em] sm:text-xs sm:tracking-[0.35em] font-semibold"
               style={{ gridTemplateColumns: `repeat(${room.cols}, minmax(0, 1fr))` }}>
               {cardLabels(room.cols).map((label) => (
-                <div key={label} className="px-3 py-3 border-r last:border-r-0 border-slate-200 text-center">
+                <div key={label} className="border-r border-slate-200 px-1.5 py-2 text-center last:border-r-0 sm:px-3 sm:py-3">
                   {label}
                 </div>
               ))}
@@ -465,7 +465,7 @@ export default function PlayRoom() {
                     key={key}
                     onClick={() => toggleMark(r, c)}
                     disabled={isDisabled}
-                    className={`aspect-square min-h-[3.75rem] sm:min-h-[5rem] rounded-none flex items-center justify-center text-center px-1.5 sm:px-2 font-semibold text-sm sm:text-base md:text-lg transition-all bg-white text-slate-900 border border-slate-200 disabled:opacity-100 ${
+                    className={`aspect-square min-h-0 rounded-none flex items-center justify-center text-center px-1 sm:px-2 font-semibold text-xs sm:text-base md:text-lg transition-all bg-white text-slate-900 border border-slate-200 disabled:opacity-100 ${
                       isFree
                         ? "bg-emerald-600 text-white border-emerald-700 shadow-inner"
                         : isMarkedAnswer

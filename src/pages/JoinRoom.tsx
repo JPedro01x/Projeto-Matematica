@@ -117,7 +117,7 @@ export default function JoinRoom() {
   };
 
   return (
-    <div className="min-h-screen bg-hero flex items-center justify-center p-6">
+    <div className="flex min-h-screen items-center justify-center bg-hero px-4 py-6 sm:p-6">
       <div className="w-full max-w-md">
         <div className="flex items-center justify-between mb-4">
           <Button
@@ -130,16 +130,16 @@ export default function JoinRoom() {
           </Button>
           <ThemeToggle />
         </div>
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/90 backdrop-blur shadow-soft">
+        <div className="mb-4 text-center sm:mb-6">
+          <div className="inline-flex items-center gap-2 rounded-full bg-card/90 px-4 py-2 shadow-soft backdrop-blur">
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-bold">Entrar na partida</span>
           </div>
         </div>
-        <Card className="p-8 rounded-3xl shadow-glow border-0">
-          <h1 className="display text-3xl mb-1">Bora jogar!</h1>
-          <p className="text-muted-foreground mb-6">Digite o PIN dado pelo professor.</p>
-          <form onSubmit={join} className="space-y-4">
+        <Card className="rounded-2xl border-0 p-5 shadow-glow sm:rounded-3xl sm:p-8">
+          <h1 className="display mb-1 text-2xl sm:text-3xl">Bora jogar!</h1>
+          <p className="mb-5 text-sm text-muted-foreground sm:mb-6 sm:text-base">Digite o PIN dado pelo professor.</p>
+          <form onSubmit={join} className="space-y-3 sm:space-y-4">
             <div>
               <Label>PIN da sala</Label>
               <Input
@@ -147,7 +147,7 @@ export default function JoinRoom() {
                 onChange={(e) => setPin(e.target.value)}
                 maxLength={6}
                 placeholder="000000"
-                className="rounded-xl h-16 mt-1.5 text-center text-3xl font-mono tracking-[0.5em] font-bold"
+                className="mt-1.5 h-14 rounded-xl text-center font-mono text-2xl font-bold tracking-[0.35em] sm:h-16 sm:text-3xl sm:tracking-[0.5em]"
               />
             </div>
             <div>
@@ -157,13 +157,13 @@ export default function JoinRoom() {
                 onChange={(e) => setNickname(e.target.value)}
                 maxLength={20}
                 placeholder="Ex: Maria"
-                className="rounded-xl h-12 mt-1.5"
+                className="mt-1.5 h-12 rounded-xl"
               />
             </div>
             <Button
               type="submit"
               disabled={busy}
-              className="w-full h-14 rounded-2xl bg-gradient-primary border-0 text-lg shadow-glow"
+              className="h-12 w-full rounded-2xl border-0 bg-gradient-primary text-base shadow-glow sm:h-14 sm:text-lg"
             >
               {busy ? "Entrando..." : "Entrar na partida"}
             </Button>
