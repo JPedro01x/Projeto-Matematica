@@ -1,9 +1,20 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Brain, Users, Trophy, Zap, GraduationCap } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const pin = searchParams.get("pin") || new URLSearchParams(window.location.search).get("pin");
+    if (pin) {
+      navigate(`/entrar?pin=${encodeURIComponent(pin)}`, { replace: true });
+    }
+  }, [navigate, searchParams]);
+
   return (
     <div className="min-h-screen overflow-hidden">
       {/* Nav */}

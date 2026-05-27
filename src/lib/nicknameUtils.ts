@@ -51,7 +51,7 @@ export async function checkNicknameAvailability(
   localStore: any
 ): Promise<{ isAvailable: boolean; suggestion?: string }> {
   try {
-    const { data: existingPlayers } = await localStore.players.select();
+    const { data: existingPlayers } = await localStore.players.select(`eq("room_id", "${roomId}")`);
     
     const players = existingPlayers || [];
     const taken = isNicknameTaken(nickname, players);

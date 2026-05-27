@@ -103,8 +103,9 @@ export default function JoinRoom() {
       console.log('Apelido verificado e disponível');
       
       const card = generateCard(roomData.rows, roomData.cols, roomData.topics as any, roomData.difficulty as any);
+      const playerId = `${roomData.id}-${nicknameToId(nickname.trim())}`;
       const { data: player } = await localStore.players.insert({
-        id: nicknameToId(nickname.trim()),
+        id: playerId,
         room_id: roomData.id, 
         nickname: nickname.trim(), 
         card,

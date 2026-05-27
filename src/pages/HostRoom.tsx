@@ -120,7 +120,7 @@ export default function HostRoom() {
 
   if (!room) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Carregando…</div>;
 
-  const joinUrl = `${window.location.origin}/entrar?pin=${room.pin}`;
+  const joinUrl = `${window.location.origin}/#/entrar?pin=${encodeURIComponent(room.pin)}`;
 
   const start = async () => {
     const challengeCount = getChallengeCount(room.rows, room.cols, room.win_condition);
