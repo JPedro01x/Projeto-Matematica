@@ -212,11 +212,11 @@ export default function GameResults() {
             Voltar à Sala
           </Button>
           <Button 
-            onClick={() => navigate("/professor")} 
+            onClick={() => navigate("/")} 
             className="rounded-xl h-12 bg-gradient-primary border-0"
           >
             <Home className="w-4 h-4 mr-2" />
-            Painel do Professor
+            Voltar ao Inicio
           </Button>
         </div>
       </main>
